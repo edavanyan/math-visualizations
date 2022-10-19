@@ -1,0 +1,7 @@
+*.meta
+/Library
+/Logs
+/obj
+/UserSettings
+*.sln
+*.csproj
