@@ -1,0 +1,310 @@
+#pragma kernel WaveKernel
+#pragma kernel WaveToMultiWaveKernel
+#pragma kernel WaveToRippleKernel
+#pragma kernel WaveToSphereKernel
+#pragma kernel WaveToTorusKernel
+#pragma kernel WaveToStarKernel
+#pragma kernel WaveToSphereBandsVerticalKernel
+#pragma kernel WaveToSphereBandsHorizontalKernel
+#pragma kernel WaveToSphereBandsTwistKernel
+
+#pragma kernel MultiWaveToWaveKernel
+#pragma kernel MultiWaveKernel
+#pragma kernel MultiWaveToRippleKernel
+#pragma kernel MultiWaveToSphereKernel
+#pragma kernel MultiWaveToTorusKernel
+#pragma kernel MultiWaveToStarKernel
+#pragma kernel MultiWaveToSphereBandsVerticalKernel
+#pragma kernel MultiWaveToSphereBandsHorizontalKernel
+#pragma kernel MultiWaveToSphereBandsTwistKernel
+
+#pragma kernel RippleToWaveKernel
+#pragma kernel RippleToMultiWaveKernel
+#pragma kernel RippleKernel
+#pragma kernel RippleToSphereKernel
+#pragma kernel RippleToTorusKernel
+#pragma kernel RippleToStarKernel
+#pragma kernel RippleToSphereBandsVerticalKernel
+#pragma kernel RippleToSphereBandsHorizontalKernel
+#pragma kernel RippleToSphereBandsTwistKernel
+
+#pragma kernel SphereToWaveKernel
+#pragma kernel SphereToMultiWaveKernel
+#pragma kernel SphereToRippleKernel
+#pragma kernel SphereKernel
+#pragma kernel SphereToTorusKernel
+#pragma kernel SphereToStarKernel
+#pragma kernel SphereToSphereBandsVerticalKernel
+#pragma kernel SphereToSphereBandsHorizontalKernel
+#pragma kernel SphereToSphereBandsTwistKernel
+
+#pragma kernel TorusToWaveKernel
+#pragma kernel TorusToMultiWaveKernel
+#pragma kernel TorusToRippleKernel
+#pragma kernel TorusToSphereKernel
+#pragma kernel TorusKernel
+#pragma kernel TorusToStarKernel
+#pragma kernel TorusToSphereBandsVerticalKernel
+#pragma kernel TorusToSphereBandsHorizontalKernel
+#pragma kernel TorusToSphereBandsTwistKernel
+
+#pragma kernel StarToWaveKernel
+#pragma kernel StarToMultiWaveKernel
+#pragma kernel StarToRippleKernel
+#pragma kernel StarToSphereKernel
+#pragma kernel StarToTorusKernel
+#pragma kernel StarKernel
+#pragma kernel StarToSphereBandsVerticalKernel
+#pragma kernel StarToSphereBandsHorizontalKernel
+#pragma kernel StarToSphereBandsTwistKernel
+
+#pragma kernel SphereBandsVerticalToWaveKernel
+#pragma kernel SphereBandsVerticalToMultiWaveKernel
+#pragma kernel SphereBandsVerticalToRippleKernel
+#pragma kernel SphereBandsVerticalToSphereKernel
+#pragma kernel SphereBandsVerticalToTorusKernel
+#pragma kernel SphereBandsVerticalToStarKernel
+#pragma kernel SphereBandsVerticalKernel
+#pragma kernel SphereBandsVerticalToSphereBandsHorizontalKernel
+#pragma kernel SphereBandsVerticalToSphereBandsTwistKernel
+
+#pragma kernel SphereBandsHorizontalToWaveKernel
+#pragma kernel SphereBandsHorizontalToMultiWaveKernel
+#pragma kernel SphereBandsHorizontalToRippleKernel
+#pragma kernel SphereBandsHorizontalToSphereKernel
+#pragma kernel SphereBandsHorizontalToTorusKernel
+#pragma kernel SphereBandsHorizontalToStarKernel
+#pragma kernel SphereBandsHorizontalToSphereBandsVerticalKernel
+#pragma kernel SphereBandsHorizontalKernel
+#pragma kernel SphereBandsHorizontalToSphereBandsTwistKernel
+
+#pragma kernel SphereBandsTwistToWaveKernel
+#pragma kernel SphereBandsTwistToMultiWaveKernel
+#pragma kernel SphereBandsTwistToRippleKernel
+#pragma kernel SphereBandsTwistToSphereKernel
+#pragma kernel SphereBandsTwistToTorusKernel
+#pragma kernel SphereBandsTwistToStarKernel
+#pragma kernel SphereBandsTwistToSphereBandsVerticalKernel
+#pragma kernel SphereBandsTwistToSphereBandsHorizontalKernel
+#pragma kernel SphereBandsTwistKernel
+
+#define PI 3.14159265358979323846
+
+RWStructuredBuffer<float3> _Positions;
+uint _Resolution;
+float _Step;
+float _Time;
+float  _TransitionProgress;
+
+float2 GetUV (uint3 id) {
+    return (id.xy + 0.5) * _Step - 1.0;
+}
+
+void SetPosition (uint3 id, float3 position) {
+    if (id.x < _Resolution && id.y < _Resolution)
+    {
+        _Positions[id.x + id.y * _Resolution] = position;
+    }
+}
+
+float3 Wave(float u, float v, float t)
+{
+    float3 p;
+    p.x = u;
+    p.y = sin(PI * (u + v + t));
+    p.z = v;
+    return p;
+}
+
+float3 MultiWave (float u, float v, float t) {
+    float3 p;
+    p.x = u;
+    p.y = sin(PI * (u + 0.5 * t));
+    p.y += 0.5 * sin(2.0 * PI * (v + t));
+    p.y += sin(PI * (u + v + 0.25 * t));
+    p.y *= 1.0 / 2.5;
+    p.z = v;
+    return p;
+}
+
+float3 Ripple (float u, float v, float t) {
+    float d = sqrt(u * u + v * v);
+    float3 p;
+    p.x = u;
+    p.y = sin(PI * (4.0 * d - t));
+    p.y /= 1.0 + 10.0 * d;
+    p.z = v;
+    return p;
+}
+
+float3 Sphere (float u, float v, float t) {
+    float r = 0.5f + 0.5f * sin(PI * t);
+    float s = r * cos(0.5f * PI * v);
+    float3 p;
+    p.x = s * sin(PI * u);
+    p.y = r * sin(0.5f * PI * v);
+    p.z = s * cos(PI * u);
+    return p;
+}
+    
+float3 SphereBandsVertical (float u, float v, float t) {
+    float r = 0.9f + 0.1f * sin(8.0 * PI * u);
+    r *= 0.5f + 0.5f * sin(PI * t);
+    float s = r * cos(0.5f * PI * v);
+    float3 p;
+    p.x = s * sin(PI * u);
+    p.y = r * sin(0.5f * PI * v);
+    p.z = s * cos(PI * u);
+    return p;
+}
+    
+float3 SphereBandsHorizontal (float u, float v, float t) {
+    float r = 0.9f + 0.1f * sin(8.0f * PI * v);
+    r *= 0.5f + 0.5f * sin(PI * t);
+    float s = r * cos(0.5f * PI * v);
+    float3 p;
+    p.x = s * sin(PI * u);
+    p.y = r * sin(0.5f * PI * v);
+    p.z = s * cos(PI * u);
+    return p;
+}
+    
+float3 SphereBandsTwist (float u, float v, float t) {
+    float r = 0.9f + 0.1f * sin(PI * (6.0f * u + 4.0f * v + t));
+    float s = r * cos(0.5f * PI * v);
+    float3 p;
+    p.x = s * sin(PI * u);
+    p.y = r * sin(0.5f * PI * v);
+    p.z = s * cos(PI * u);
+    return p;
+}
+    
+float3 Torus (float u, float v, float t) {
+    float r1 = cos(PI * 0.75f * t) * 0.25f + 0.5f;
+    float r2 = cos(PI * 0.75f * t) * 0.125f + 0.125f;
+    float s = r1 + r2 * cos(PI * v);
+    float3 p;
+    p.x = s * sin(PI * u);
+    p.y = r2 * sin(PI * v);
+    p.z = s * cos(PI * u);
+    return p;
+}
+    
+float3 Star (float u, float v, float t) {
+    float r1 = 0.7f + 0.1f * sin(PI * (6.0f * u + 0.5f * t));
+    float r2 = 0.15f + 0.05f * sin(PI * (8.0f * u + 4.0f * v + 2.0f * t));
+    float s = r1 + r2 * cos(PI * v);
+    float3 p;
+    p.x = s * sin(PI * u);
+    p.y = r2 * sin(PI * v);
+    p.z = s * cos(PI * u);
+    return p;
+}
+
+#define KERNEL_FUNCTION(function) \
+[numthreads(5, 5, 1)] \
+void function##Kernel(uint3 id : SV_DispatchThreadID) \
+{ \
+    float2 uv = GetUV(id); \
+    SetPosition(id, function(uv.r, uv.g, _Time)); \
+}
+
+#define KERNEL_MORPH_FUNCTION(functionA, functionB) \
+[numthreads(5, 5, 1)] \
+void functionA##To##functionB##Kernel (uint3 id: SV_DispatchThreadID) { \
+    float2 uv = GetUV(id); \
+    float3 position = lerp( \
+    functionA(uv.x, uv.y, _Time), functionB(uv.x, uv.y, _Time), _TransitionProgress); \
+    SetPosition(id, position); \
+}
+
+KERNEL_FUNCTION(Wave)
+KERNEL_FUNCTION(MultiWave)
+KERNEL_FUNCTION(Ripple)
+KERNEL_FUNCTION(Sphere)
+KERNEL_FUNCTION(Torus)
+KERNEL_FUNCTION(Star)
+KERNEL_FUNCTION(SphereBandsVertical)
+KERNEL_FUNCTION(SphereBandsHorizontal)
+KERNEL_FUNCTION(SphereBandsTwist)
+
+KERNEL_MORPH_FUNCTION(Wave, MultiWave);
+KERNEL_MORPH_FUNCTION(Wave, Ripple);
+KERNEL_MORPH_FUNCTION(Wave, Sphere);
+KERNEL_MORPH_FUNCTION(Wave, Torus);
+KERNEL_MORPH_FUNCTION(Wave, Star);
+KERNEL_MORPH_FUNCTION(Wave, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(Wave, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(Wave, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(MultiWave, Wave);
+KERNEL_MORPH_FUNCTION(MultiWave, Ripple);
+KERNEL_MORPH_FUNCTION(MultiWave, Sphere);
+KERNEL_MORPH_FUNCTION(MultiWave, Torus);
+KERNEL_MORPH_FUNCTION(MultiWave, Star);
+KERNEL_MORPH_FUNCTION(MultiWave, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(MultiWave, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(MultiWave, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(Ripple, Wave);
+KERNEL_MORPH_FUNCTION(Ripple, MultiWave);
+KERNEL_MORPH_FUNCTION(Ripple, Sphere);
+KERNEL_MORPH_FUNCTION(Ripple, Torus);
+KERNEL_MORPH_FUNCTION(Ripple, Star);
+KERNEL_MORPH_FUNCTION(Ripple, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(Ripple, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(Ripple, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(Sphere, Wave);
+KERNEL_MORPH_FUNCTION(Sphere, MultiWave);
+KERNEL_MORPH_FUNCTION(Sphere, Ripple);
+KERNEL_MORPH_FUNCTION(Sphere, Torus);
+KERNEL_MORPH_FUNCTION(Sphere, Star);
+KERNEL_MORPH_FUNCTION(Sphere, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(Sphere, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(Sphere, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(Torus, Wave);
+KERNEL_MORPH_FUNCTION(Torus, MultiWave);
+KERNEL_MORPH_FUNCTION(Torus, Ripple);
+KERNEL_MORPH_FUNCTION(Torus, Sphere);
+KERNEL_MORPH_FUNCTION(Torus, Star);
+KERNEL_MORPH_FUNCTION(Torus, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(Torus, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(Torus, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(Star, Wave);
+KERNEL_MORPH_FUNCTION(Star, MultiWave);
+KERNEL_MORPH_FUNCTION(Star, Ripple);
+KERNEL_MORPH_FUNCTION(Star, Sphere);
+KERNEL_MORPH_FUNCTION(Star, Torus);
+KERNEL_MORPH_FUNCTION(Star, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(Star, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(Star, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, Wave);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, MultiWave);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, Ripple);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, Sphere);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, Star);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, Torus);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, SphereBandsHorizontal);
+KERNEL_MORPH_FUNCTION(SphereBandsVertical, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, Wave);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, MultiWave);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, Ripple);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, Sphere);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, Star);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, Torus);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(SphereBandsHorizontal, SphereBandsTwist);
+
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, Wave);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, MultiWave);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, Ripple);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, Sphere);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, Star);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, Torus);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, SphereBandsVertical);
+KERNEL_MORPH_FUNCTION(SphereBandsTwist, SphereBandsHorizontal);

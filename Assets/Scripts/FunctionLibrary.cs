@@ -5,6 +5,10 @@ using UnityEngine;
 
 public static class FunctionLibrary
 {
+    public static Vector3 Morph(float u, float v, float t, MathFunction from, MathFunction to, float progress)
+    {
+        return Vector3.LerpUnclamped(from(u, v, t), to(u, v, t), SmoothStep(0f, 1f, progress));
+    }
     
     public static Vector3 Wave(float u, float v, float t)
     {
@@ -104,24 +108,24 @@ public static class FunctionLibrary
 
 public enum Function
 {
+    [MethodValue("SphereBandsTwist")]
+    SphereBandsTwist,
     [MethodValue("Wave")]
     Wave,
-    [MethodValue("MultiWave")]
-    MultiWave,
+    [MethodValue("Torus")]
+    Torus,
     [MethodValue("Ripple")]
     Ripple,
-    [MethodValue("Sphere")]
-    Sphere,
+    [MethodValue("Star")]
+    Star,
     [MethodValue("SphereBandsVertical")]
     SphereBandsVertical,
     [MethodValue("SphereBandsHorizontal")]
     SphereBandsHorizontal,
-    [MethodValue("SphereBandsTwist")]
-    SphereBandsTwist,
-    [MethodValue("Torus")]
-    Torus,
-    [MethodValue("Star")]
-    Star
+    [MethodValue("MultiWave")]
+    MultiWave,
+    [MethodValue("Sphere")]
+    Sphere
 }
 
 public delegate Vector3 MathFunction(float u, float v, float t);
